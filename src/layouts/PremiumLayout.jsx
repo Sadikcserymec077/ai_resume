@@ -1,5 +1,5 @@
 import React from 'react';
-import TopBar from './components/common/TopBar';
+import TopBar from '../components/common/TopBar';
 import { Outlet } from 'react-router-dom';
 
 const PremiumLayout = () => {
