@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 const ResumeContext = createContext();
 
 const STORAGE_KEY = 'resumeBuilderData';
+const TEMPLATE_KEY = 'resumeBuilderTemplate';
 
 const INITIAL_STATE = {
     personal: {
@@ -73,7 +74,6 @@ const loadFromStorage = () => {
         const stored = localStorage.getItem(STORAGE_KEY);
         if (stored) {
             const parsed = JSON.parse(stored);
-            // Merge with INITIAL_STATE to ensure all keys exist
             return {
                 personal: { ...INITIAL_STATE.personal, ...parsed.personal },
                 summary: parsed.summary || '',
@@ -89,10 +89,23 @@ const loadFromStorage = () => {
     return INITIAL_STATE;
 };
 
+const loadTemplate = () => {
+    try {
+        const stored = localStorage.getItem(TEMPLATE_KEY);
+        if (stored && ['classic', 'modern', 'minimal'].includes(stored)) {
+            return stored;
+        }
+    } catch (e) {
+        // ignore
+    }
+    return 'classic';
+};
+
 export const ResumeProvider = ({ children }) => {
     const [resumeData, setResumeData] = useState(loadFromStorage);
+    const [template, setTemplate] = useState(loadTemplate);
 
-    // Auto-save to localStorage whenever resumeData changes
+    // Auto-save resume data
     useEffect(() => {
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(resumeData));
@@ -100,6 +113,15 @@ export const ResumeProvider = ({ children }) => {
             console.warn('Failed to save resume data to localStorage:', e);
         }
     }, [resumeData]);
+
+    // Auto-save template choice
+    useEffect(() => {
+        try {
+            localStorage.setItem(TEMPLATE_KEY, template);
+        } catch (e) {
+            // ignore
+        }
+    }, [template]);
 
     const updatePersonal = (field, value) => {
         setResumeData(prev => ({
@@ -140,7 +162,9 @@ export const ResumeProvider = ({ children }) => {
             updateSection,
             addItem,
             removeItem,
-            loadSampleData
+            loadSampleData,
+            template,
+            setTemplate
         }}>
             {children}
         </ResumeContext.Provider>

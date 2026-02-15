@@ -1,6 +1,28 @@
 import React, { useState } from 'react';
 import { useResume } from '../../contexts/ResumeContext';
 import { Plus, Trash2 } from 'lucide-react';
+import { getBulletSuggestions } from '../../utils/bulletGuidance';
+
+/** Inline bullet hint — shown below description fields */
+const BulletHints = ({ text }) => {
+    const hints = getBulletSuggestions(text);
+    if (hints.length === 0) return null;
+
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '4px' }}>
+            {hints.map((h, i) => (
+                <span key={i} style={{
+                    fontSize: '11px',
+                    color: '#E65100',
+                    fontStyle: 'italic',
+                    opacity: 0.85
+                }}>
+                    ↳ {h}
+                </span>
+            ))}
+        </div>
+    );
+};
 
 const BuilderForm = () => {
     const { resumeData, updatePersonal, updateSection, addItem, removeItem, loadSampleData } = useResume();
@@ -22,16 +44,19 @@ const BuilderForm = () => {
     const [newProject, setNewProject] = useState({ name: '', description: '', link: '' });
 
     const handleAddEducation = () => {
+        if (!newEducation.institution && !newEducation.degree) return;
         addItem('education', newEducation);
         setNewEducation({ institution: '', degree: '', year: '' });
     };
 
     const handleAddExperience = () => {
+        if (!newExperience.role && !newExperience.company) return;
         addItem('experience', newExperience);
         setNewExperience({ role: '', company: '', duration: '', description: '' });
     };
 
     const handleAddProject = () => {
+        if (!newProject.name) return;
         addItem('projects', newProject);
         setNewProject({ name: '', description: '', link: '' });
     };
@@ -40,7 +65,6 @@ const BuilderForm = () => {
         <div className="builder-form" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
 
             {/* Sample Data Button */}
-            {/* Moved to top for easy access */}
             <button className="btn-secondary" onClick={loadSampleData}>
                 Load Sample Data
             </button>
@@ -63,20 +87,23 @@ const BuilderForm = () => {
             <section>
                 <h3 style={{ marginBottom: '16px' }}>Summary</h3>
                 <textarea
-                    placeholder="I build..."
+                    placeholder="A concise professional summary (40–120 words)…"
                     value={resumeData.summary}
                     onChange={handleSummaryChange}
                     style={{ height: '100px' }}
                 />
+                <div style={{ fontSize: '11px', color: '#999', marginTop: '4px' }}>
+                    {resumeData.summary ? resumeData.summary.trim().split(/\s+/).length : 0} words
+                </div>
             </section>
 
             {/* Education */}
             <section>
                 <h3 style={{ marginBottom: '16px' }}>Education</h3>
                 {resumeData.education.map(ed => (
-                    <div key={ed.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px', border: '1px solid #eee', marginBottom: '8px' }}>
+                    <div key={ed.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px', border: '1px solid #eee', marginBottom: '8px', borderRadius: '4px' }}>
                         <div><strong>{ed.degree}</strong>, {ed.institution} ({ed.year})</div>
-                        <button onClick={() => removeItem('education', ed.id)} style={{ color: 'red' }}><Trash2 size={16} /></button>
+                        <button onClick={() => removeItem('education', ed.id)} style={{ color: '#8B0000', background: 'none' }}><Trash2 size={16} /></button>
                     </div>
                 ))}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 120px', gap: '8px', marginTop: '8px' }}>
@@ -93,13 +120,14 @@ const BuilderForm = () => {
             <section>
                 <h3 style={{ marginBottom: '16px' }}>Experience</h3>
                 {resumeData.experience.map(exp => (
-                    <div key={exp.id} style={{ padding: '8px', border: '1px solid #eee', marginBottom: '8px' }}>
+                    <div key={exp.id} style={{ padding: '12px', border: '1px solid #eee', marginBottom: '8px', borderRadius: '4px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                             <div><strong>{exp.role}</strong> at {exp.company}</div>
-                            <button onClick={() => removeItem('experience', exp.id)} style={{ color: 'red' }}><Trash2 size={16} /></button>
+                            <button onClick={() => removeItem('experience', exp.id)} style={{ color: '#8B0000', background: 'none' }}><Trash2 size={16} /></button>
                         </div>
                         <div style={{ fontSize: '12px', color: '#666' }}>{exp.duration}</div>
                         <p style={{ fontSize: '14px', marginTop: '4px' }}>{exp.description}</p>
+                        <BulletHints text={exp.description} />
                     </div>
                 ))}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
@@ -108,7 +136,8 @@ const BuilderForm = () => {
                         <input placeholder="Company" value={newExperience.company} onChange={e => setNewExperience({ ...newExperience, company: e.target.value })} />
                     </div>
                     <input placeholder="Duration (e.g. 2020 - Present)" value={newExperience.duration} onChange={e => setNewExperience({ ...newExperience, duration: e.target.value })} />
-                    <textarea placeholder="Description" value={newExperience.description} onChange={e => setNewExperience({ ...newExperience, description: e.target.value })} style={{ height: '80px' }} />
+                    <textarea placeholder="Description (start with an action verb)" value={newExperience.description} onChange={e => setNewExperience({ ...newExperience, description: e.target.value })} style={{ height: '80px' }} />
+                    <BulletHints text={newExperience.description} />
                 </div>
                 <button className="btn-secondary" style={{ marginTop: '8px', width: '100%' }} onClick={handleAddExperience}>
                     <Plus size={16} style={{ marginRight: '4px' }} /> Add Experience
@@ -119,18 +148,20 @@ const BuilderForm = () => {
             <section>
                 <h3 style={{ marginBottom: '16px' }}>Projects</h3>
                 {resumeData.projects.map(proj => (
-                    <div key={proj.id} style={{ padding: '8px', border: '1px solid #eee', marginBottom: '8px' }}>
+                    <div key={proj.id} style={{ padding: '12px', border: '1px solid #eee', marginBottom: '8px', borderRadius: '4px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                             <strong>{proj.name}</strong>
-                            <button onClick={() => removeItem('projects', proj.id)} style={{ color: 'red' }}><Trash2 size={16} /></button>
+                            <button onClick={() => removeItem('projects', proj.id)} style={{ color: '#8B0000', background: 'none' }}><Trash2 size={16} /></button>
                         </div>
                         <p style={{ fontSize: '14px' }}>{proj.description}</p>
-                        <a href={`https://${proj.link}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', color: 'blue' }}>{proj.link}</a>
+                        <BulletHints text={proj.description} />
+                        {proj.link && <a href={`https://${proj.link}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', color: 'var(--color-accent)' }}>{proj.link}</a>}
                     </div>
                 ))}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
                     <input placeholder="Project Name" value={newProject.name} onChange={e => setNewProject({ ...newProject, name: e.target.value })} />
-                    <input placeholder="Description" value={newProject.description} onChange={e => setNewProject({ ...newProject, description: e.target.value })} />
+                    <textarea placeholder="Description (start with an action verb)" value={newProject.description} onChange={e => setNewProject({ ...newProject, description: e.target.value })} style={{ height: '60px' }} />
+                    <BulletHints text={newProject.description} />
                     <input placeholder="Link" value={newProject.link} onChange={e => setNewProject({ ...newProject, link: e.target.value })} />
                 </div>
                 <button className="btn-secondary" style={{ marginTop: '8px', width: '100%' }} onClick={handleAddProject}>
@@ -147,7 +178,9 @@ const BuilderForm = () => {
                     onChange={handleSkillsChange}
                     style={{ height: '60px' }}
                 />
-                <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>Comma separated values</div>
+                <div style={{ fontSize: '11px', color: '#999', marginTop: '4px' }}>
+                    {resumeData.skills ? resumeData.skills.split(',').map(s => s.trim()).filter(s => s).length : 0} skills (comma separated)
+                </div>
             </section>
 
         </div>
