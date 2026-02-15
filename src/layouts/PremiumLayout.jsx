@@ -1,26 +1,15 @@
 import React from 'react';
+import TopBar from './components/common/TopBar';
 import { Outlet } from 'react-router-dom';
-import TopBar from '../components/common/TopBar';
-import ProofFooter from '../components/common/ProofFooter';
-import BuildPanel from '../components/common/BuildPanel';
-import { StepProvider } from '../contexts/StepContext';
 
 const PremiumLayout = () => {
     return (
-        <StepProvider>
-            <div className="premium-layout-container">
-                <TopBar />
-                <div className="main-content-layout">
-                    <main className="workspace-panel">
-                        <Outlet />
-                    </main>
-                    <aside className="build-panel">
-                        <BuildPanel />
-                    </aside>
-                </div>
-                <ProofFooter />
+        <div className="premium-layout-container" style={{ display: 'block', height: '100vh', overflowX: 'hidden' }}>
+            <TopBar />
+            <div className="main-content" style={{ marginTop: '0px' }}>
+                <Outlet />
             </div>
-        </StepProvider>
+        </div>
     );
 };
 
