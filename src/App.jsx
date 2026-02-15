@@ -7,7 +7,7 @@ import { STEPS } from './constants/steps';
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <Routes>
         <Route path="/" element={<Navigate to={STEPS[0].route} replace />} />
 
