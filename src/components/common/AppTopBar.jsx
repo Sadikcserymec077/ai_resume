@@ -1,9 +1,10 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 
-const TopBar = () => {
+const AppTopBar = () => {
     return (
         <header className="top-bar">
+            {/* ... content ... */}
             <div className="top-bar-left">
                 <h1 style={{ fontSize: '18px', margin: 0, fontWeight: '700', letterSpacing: '-0.5px' }}>
                     AI Resume Builder
@@ -57,4 +58,4 @@ const TopBar = () => {
     );
 };
 
-export default TopBar;
+export default AppTopBar;

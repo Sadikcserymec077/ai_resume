@@ -1,11 +1,11 @@
 import React from 'react';
-import TopBar from '../components/common/TopBar';
+import AppTopBar from '../components/common/AppTopBar';
 import { Outlet } from 'react-router-dom';
 
-const PremiumLayout = () => {
+const AppLayout = () => {
     return (
         <div className="premium-layout-container" style={{ display: 'block', height: '100vh', overflowX: 'hidden' }}>
-            <TopBar />
+            <AppTopBar />
             <div className="main-content" style={{ marginTop: '0px' }}>
                 <Outlet />
             </div>
@@ -13,4 +13,4 @@ const PremiumLayout = () => {
     );
 };
 
-export default PremiumLayout;
+export default AppLayout;
