@@ -1,47 +1,7 @@
 import React, { useMemo } from 'react';
 import { useResume } from '../../contexts/ResumeContext';
 import { computeATSScore } from '../../utils/atsScoring';
-import { AlertCircle, ArrowUp } from 'lucide-react';
-
-/**
- * Compute top 3 improvement suggestions based on resume gaps.
- * Separate from ATS suggestions — these are prioritized improvement tips.
- */
-const computeImprovements = (resumeData) => {
-    const improvements = [];
-    const { summary, education, experience, projects, skills } = resumeData;
-
-    const wordCount = summary ? summary.trim().split(/\s+/).length : 0;
-    const skillCount = (() => {
-        if (typeof skills === 'string') return skills.split(',').map(s => s.trim()).filter(s => s).length;
-        if (skills && typeof skills === 'object') return (skills.technical?.length || 0) + (skills.soft?.length || 0) + (skills.tools?.length || 0);
-        return 0;
-    })();
-    const allBullets = [
-        ...experience.map(e => e.description || ''),
-        ...projects.map(p => p.description || '')
-    ];
-    const hasNumbers = allBullets.some(b => /\d+%|\d+x|\d+k|\$\d+|\d{2,}/.test(b));
-
-    // Priority order
-    if (experience.length === 0) {
-        improvements.push('Add at least one work experience or internship entry.');
-    }
-    if (projects.length < 2) {
-        improvements.push(`Add more projects (you have ${projects.length}, target 2+).`);
-    }
-    if (!hasNumbers) {
-        improvements.push('Include measurable impact (numbers, %, metrics) in your bullets.');
-    }
-    if (wordCount < 40) {
-        improvements.push('Expand your summary to 40–120 words for better ATS matching.');
-    }
-    if (skillCount < 8) {
-        improvements.push(`List more skills (you have ${skillCount}, target 8+).`);
-    }
-
-    return improvements.slice(0, 3);
-};
+import { ArrowUp } from 'lucide-react';
 
 const ATSScore = () => {
     const { resumeData } = useResume();
@@ -51,20 +11,16 @@ const ATSScore = () => {
         [resumeData]
     );
 
-    const improvements = useMemo(
-        () => computeImprovements(resumeData),
-        [resumeData]
-    );
-
+    // Tier colors and labels per spec
     const getScoreColor = (s) => {
-        if (s >= 65) return '#2E7D32';
-        if (s >= 40) return '#E65100';
-        return '#8B0000';
+        if (s >= 71) return '#2E7D32';  // green
+        if (s >= 41) return '#E68A00';  // amber
+        return '#C62828';               // red
     };
 
     const getScoreLabel = (s) => {
-        if (s >= 65) return 'Strong';
-        if (s >= 40) return 'Developing';
+        if (s >= 71) return 'Strong Resume';
+        if (s >= 41) return 'Getting There';
         return 'Needs Work';
     };
 
@@ -125,26 +81,26 @@ const ATSScore = () => {
                 </div>
             </div>
 
-            {/* Label */}
+            {/* Tier Label */}
             <div style={{ textAlign: 'center', marginBottom: '20px' }}>
                 <span style={{
                     display: 'inline-block', padding: '4px 16px', borderRadius: '100px',
                     fontSize: '12px', fontWeight: '600', color: color,
-                    backgroundColor: color + '12', border: `1px solid ${color}30`,
+                    backgroundColor: color + '14', border: `1px solid ${color}30`,
                     transition: 'all 0.3s ease'
                 }}>
                     {label}
                 </span>
             </div>
 
-            {/* Suggestions */}
+            {/* Improvement Suggestions with point values */}
             {suggestions.length > 0 && (
                 <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: '16px' }}>
                     <div style={{
                         fontSize: '12px', fontWeight: '600', color: '#999',
                         textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px'
                     }}>
-                        Suggestions
+                        Improve Your Score
                     </div>
                     <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         {suggestions.map((s, i) => (
@@ -152,38 +108,37 @@ const ATSScore = () => {
                                 display: 'flex', alignItems: 'flex-start', gap: '8px',
                                 fontSize: '13px', color: 'var(--color-text-secondary)', lineHeight: '1.4'
                             }}>
-                                <AlertCircle size={14} style={{ flexShrink: 0, marginTop: '2px', color: '#E65100' }} />
-                                {s}
+                                <ArrowUp size={14} style={{ flexShrink: 0, marginTop: '2px', color: '#2E7D32' }} />
+                                <span style={{ flex: 1 }}>{s.text}</span>
+                                <span style={{
+                                    flexShrink: 0,
+                                    fontSize: '11px',
+                                    fontWeight: '600',
+                                    color: '#2E7D32',
+                                    backgroundColor: '#e8f5e9',
+                                    padding: '1px 8px',
+                                    borderRadius: '100px',
+                                    whiteSpace: 'nowrap'
+                                }}>
+                                    +{s.points}
+                                </span>
                             </li>
                         ))}
                     </ul>
                 </div>
             )}
 
-            {/* Top 3 Improvements */}
-            {improvements.length > 0 && (
+            {/* All done */}
+            {suggestions.length === 0 && (
                 <div style={{
                     borderTop: '1px solid #f0f0f0',
                     paddingTop: '16px',
-                    marginTop: suggestions.length > 0 ? '16px' : '0'
+                    textAlign: 'center',
+                    fontSize: '13px',
+                    color: '#2E7D32',
+                    fontWeight: '500'
                 }}>
-                    <div style={{
-                        fontSize: '12px', fontWeight: '600', color: '#999',
-                        textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px'
-                    }}>
-                        Top 3 Improvements
-                    </div>
-                    <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        {improvements.map((imp, i) => (
-                            <li key={i} style={{
-                                display: 'flex', alignItems: 'flex-start', gap: '8px',
-                                fontSize: '13px', color: 'var(--color-text)', lineHeight: '1.4'
-                            }}>
-                                <ArrowUp size={14} style={{ flexShrink: 0, marginTop: '2px', color: '#2E7D32' }} />
-                                {imp}
-                            </li>
-                        ))}
-                    </ul>
+                    ✓ All sections complete — your resume is ATS-ready!
                 </div>
             )}
         </div>

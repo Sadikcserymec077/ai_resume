@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import ResumePreview from '../components/resume/ResumePreview';
 import TemplateTabs from '../components/resume/TemplateTabs';
+import ATSScore from '../components/resume/ATSScore';
 import { useResume } from '../contexts/ResumeContext';
 import { resumeToPlainText, getExportWarnings } from '../utils/resumeExport';
 import { Printer, Copy, Check, AlertTriangle, Download } from 'lucide-react';
@@ -186,15 +187,21 @@ const PreviewPage = () => {
                 </div>
             )}
 
-            {/* Full Preview */}
+            {/* Full Preview + ATS Score */}
             <div className="preview-page" style={{
                 display: 'flex',
                 justifyContent: 'center',
-                padding: '64px',
+                gap: '32px',
+                padding: '48px 32px',
                 backgroundColor: 'var(--color-bg)',
-                flex: 1
+                flex: 1,
+                alignItems: 'flex-start',
+                flexWrap: 'wrap'
             }}>
                 <ResumePreview />
+                <div className="no-print" style={{ width: '300px', flexShrink: 0 }}>
+                    <ATSScore />
+                </div>
             </div>
         </div>
     );
