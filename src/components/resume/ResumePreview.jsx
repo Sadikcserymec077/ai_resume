@@ -6,7 +6,6 @@ const ResumePreview = () => {
     const { personal, summary, education, experience, projects, skills } = resumeData;
     const previewRef = useRef();
 
-    // Basic styling for the preview
     const containerStyle = {
         fontFamily: 'var(--font-serif)',
         color: '#000',
@@ -36,23 +35,28 @@ const ResumePreview = () => {
         letterSpacing: '1px'
     };
 
-    // Helper to format skills from string
-    const skillsList = skills.split(',').map(s => s.trim()).filter(s => s);
+    const skillsList = skills
+        ? skills.split(',').map(s => s.trim()).filter(s => s)
+        : [];
+
+    const hasLinks = personal.github || personal.linkedin || personal.portfolio;
+    const hasHeader = personal.fullName || personal.email || personal.phone || personal.location;
 
     return (
         <div ref={previewRef} style={containerStyle}>
+            {/* Header */}
             <header style={headerStyle}>
-                <h1 style={{ fontSize: '32px', margin: '0 0 8px 0', textTransform: 'uppercase' }}>{personal.fullName || 'YOUR NAME'}</h1>
+                <h1 style={{ fontSize: '32px', margin: '0 0 8px 0', textTransform: 'uppercase' }}>
+                    {personal.fullName || 'YOUR NAME'}
+                </h1>
                 <div style={{ fontSize: '12px', display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
                     {personal.location && <span>{personal.location}</span>}
                     {personal.phone && <span>• {personal.phone}</span>}
                     {personal.email && <span>• {personal.email}</span>}
-                    {personal.linkedin && <span>• <a href={`https://${personal.linkedin}`} style={{ color: 'inherit', textDecoration: 'none' }}>LinkedIn</a></span>}
-                    {personal.github && <span>• <a href={`https://${personal.github}`} style={{ color: 'inherit', textDecoration: 'none' }}>GitHub</a></span>}
-                    {personal.portfolio && <span>• <a href={`https://${personal.portfolio}`} style={{ color: 'inherit', textDecoration: 'none' }}>Portfolio</a></span>}
                 </div>
             </header>
 
+            {/* Summary */}
             {summary && (
                 <section>
                     <div style={sectionTitleStyle}>Summary</div>
@@ -60,6 +64,7 @@ const ResumePreview = () => {
                 </section>
             )}
 
+            {/* Skills */}
             {skillsList.length > 0 && (
                 <section>
                     <div style={sectionTitleStyle}>Skills</div>
@@ -67,6 +72,7 @@ const ResumePreview = () => {
                 </section>
             )}
 
+            {/* Experience */}
             {experience.length > 0 && (
                 <section>
                     <div style={sectionTitleStyle}>Experience</div>
@@ -83,6 +89,7 @@ const ResumePreview = () => {
                 </section>
             )}
 
+            {/* Projects */}
             {projects.length > 0 && (
                 <section>
                     <div style={sectionTitleStyle}>Projects</div>
@@ -90,7 +97,11 @@ const ResumePreview = () => {
                         <div key={proj.id} style={{ marginBottom: '12px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 'bold' }}>
                                 <span>{proj.name}</span>
-                                {proj.link && <a href={`https://${proj.link}`} style={{ color: 'inherit', textDecoration: 'none', fontSize: '10px' }}>{proj.link}</a>}
+                                {proj.link && (
+                                    <a href={`https://${proj.link}`} style={{ color: 'inherit', textDecoration: 'none', fontSize: '10px' }}>
+                                        {proj.link}
+                                    </a>
+                                )}
                             </div>
                             <p style={{ fontSize: '12px' }}>{proj.description}</p>
                         </div>
@@ -98,6 +109,7 @@ const ResumePreview = () => {
                 </section>
             )}
 
+            {/* Education */}
             {education.length > 0 && (
                 <section>
                     <div style={sectionTitleStyle}>Education</div>
@@ -113,6 +125,29 @@ const ResumePreview = () => {
                 </section>
             )}
 
+            {/* Links */}
+            {hasLinks && (
+                <section>
+                    <div style={sectionTitleStyle}>Links</div>
+                    <div style={{ fontSize: '12px', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                        {personal.github && (
+                            <a href={`https://${personal.github}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                                GitHub
+                            </a>
+                        )}
+                        {personal.linkedin && (
+                            <a href={`https://${personal.linkedin}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                                LinkedIn
+                            </a>
+                        )}
+                        {personal.portfolio && (
+                            <a href={`https://${personal.portfolio}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                                Portfolio
+                            </a>
+                        )}
+                    </div>
+                </section>
+            )}
         </div>
     );
 };

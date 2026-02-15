@@ -1,6 +1,8 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const ResumeContext = createContext();
+
+const STORAGE_KEY = 'resumeBuilderData';
 
 const INITIAL_STATE = {
     personal: {
@@ -65,8 +67,39 @@ const SAMPLE_DATA = {
     skills: 'JavaScript, React, Node.js, Python, AWS, Docker, TypeScript, GraphQL'
 };
 
+// Load from localStorage on init
+const loadFromStorage = () => {
+    try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+            const parsed = JSON.parse(stored);
+            // Merge with INITIAL_STATE to ensure all keys exist
+            return {
+                personal: { ...INITIAL_STATE.personal, ...parsed.personal },
+                summary: parsed.summary || '',
+                education: parsed.education || [],
+                experience: parsed.experience || [],
+                projects: parsed.projects || [],
+                skills: parsed.skills || ''
+            };
+        }
+    } catch (e) {
+        console.warn('Failed to load resume data from localStorage:', e);
+    }
+    return INITIAL_STATE;
+};
+
 export const ResumeProvider = ({ children }) => {
-    const [resumeData, setResumeData] = useState(INITIAL_STATE);
+    const [resumeData, setResumeData] = useState(loadFromStorage);
+
+    // Auto-save to localStorage whenever resumeData changes
+    useEffect(() => {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(resumeData));
+        } catch (e) {
+            console.warn('Failed to save resume data to localStorage:', e);
+        }
+    }, [resumeData]);
 
     const updatePersonal = (field, value) => {
         setResumeData(prev => ({

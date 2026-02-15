@@ -1,6 +1,7 @@
 import React from 'react';
 import BuilderForm from '../components/resume/BuilderForm';
 import ResumePreview from '../components/resume/ResumePreview';
+import ATSScore from '../components/resume/ATSScore';
 
 const BuilderPage = () => {
     return (
@@ -19,16 +20,26 @@ const BuilderPage = () => {
                 <BuilderForm />
             </div>
 
-            {/* Preview Area */}
+            {/* Preview + ATS Score Area */}
             <div className="preview-area" style={{
                 backgroundColor: 'var(--color-bg)',
-                padding: '32px',
+                padding: '24px',
                 display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'flex-start',
+                flexDirection: 'column',
+                gap: '0',
                 overflowY: 'auto'
             }}>
-                <div style={{ transform: 'scale(0.8)', transformOrigin: 'top center', width: '100%', maxWidth: '800px' }}>
+                {/* ATS Score Panel */}
+                <ATSScore />
+
+                {/* Live Resume Preview */}
+                <div style={{
+                    transform: 'scale(0.75)',
+                    transformOrigin: 'top center',
+                    width: '133%',     /* compensate for 0.75 scale */
+                    marginLeft: '-16.5%',
+                    maxWidth: '133%'
+                }}>
                     <ResumePreview />
                 </div>
             </div>
