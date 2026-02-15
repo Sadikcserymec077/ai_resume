@@ -11,7 +11,7 @@ const TemplateTabs = () => {
     const { template, setTemplate } = useResume();
 
     return (
-        <div style={{
+        <div className="template-tabs" style={{
             display: 'flex',
             gap: '0',
             borderBottom: '1px solid var(--color-border)',

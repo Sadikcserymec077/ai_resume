@@ -16,7 +16,7 @@ const ResumePreview = () => {
     const hasLinks = personal.github || personal.linkedin || personal.portfolio;
 
     return (
-        <div ref={previewRef} style={styles.container}>
+        <div ref={previewRef} className="resume-preview-container" style={styles.container}>
             {/* Header */}
             <header style={styles.header}>
                 <h1 style={styles.name}>
