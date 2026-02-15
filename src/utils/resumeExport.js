@@ -1,5 +1,6 @@
 /**
  * Converts resume data to clean plain-text format.
+ * Supports new skills format (object with categories) and new project format.
  */
 export const resumeToPlainText = (resumeData) => {
     const { personal, summary, education, experience, projects, skills } = resumeData;
@@ -66,23 +67,36 @@ export const resumeToPlainText = (resumeData) => {
         lines.push('-'.repeat(40));
         projects.forEach(proj => {
             let header = proj.name || '';
-            if (proj.link) header += ` — ${proj.link}`;
+            const urls = [];
+            if (proj.liveUrl) urls.push(proj.liveUrl);
+            if (proj.githubUrl) urls.push(proj.githubUrl);
+            if (proj.link && !proj.liveUrl) urls.push(proj.link); // backward compat
+            if (urls.length > 0) header += ` — ${urls.join(' | ')}`;
             lines.push(header);
             if (proj.description) {
                 lines.push(`  ${proj.description}`);
+            }
+            if (proj.techStack && proj.techStack.length > 0) {
+                lines.push(`  Tech: ${proj.techStack.join(', ')}`);
             }
             lines.push('');
         });
     }
 
     // Skills
-    const skillsList = skills
-        ? skills.split(',').map(s => s.trim()).filter(s => s)
-        : [];
-    if (skillsList.length > 0) {
+    const skillLines = [];
+    if (typeof skills === 'string') {
+        const list = skills.split(',').map(s => s.trim()).filter(s => s);
+        if (list.length > 0) skillLines.push(list.join(', '));
+    } else if (skills && typeof skills === 'object') {
+        if (skills.technical?.length) skillLines.push(`Technical: ${skills.technical.join(', ')}`);
+        if (skills.soft?.length) skillLines.push(`Soft Skills: ${skills.soft.join(', ')}`);
+        if (skills.tools?.length) skillLines.push(`Tools: ${skills.tools.join(', ')}`);
+    }
+    if (skillLines.length > 0) {
         lines.push('SKILLS');
         lines.push('-'.repeat(40));
-        lines.push(skillsList.join(', '));
+        skillLines.forEach(l => lines.push(l));
         lines.push('');
     }
 
@@ -102,7 +116,7 @@ export const resumeToPlainText = (resumeData) => {
 };
 
 /**
- * Returns an array of validation warnings (non-blocking).
+ * Returns a validation warning string (non-blocking), or null if clean.
  */
 export const getExportWarnings = (resumeData) => {
     const warnings = [];

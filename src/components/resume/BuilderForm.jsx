@@ -1,22 +1,17 @@
 import React, { useState } from 'react';
 import { useResume } from '../../contexts/ResumeContext';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, ChevronRight, Sparkles } from 'lucide-react';
 import { getBulletSuggestions } from '../../utils/bulletGuidance';
+import TagInput from './TagInput';
 
-/** Inline bullet hint — shown below description fields */
+/** Inline bullet hint */
 const BulletHints = ({ text }) => {
     const hints = getBulletSuggestions(text);
     if (hints.length === 0) return null;
-
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '4px' }}>
             {hints.map((h, i) => (
-                <span key={i} style={{
-                    fontSize: '11px',
-                    color: '#E65100',
-                    fontStyle: 'italic',
-                    opacity: 0.85
-                }}>
+                <span key={i} style={{ fontSize: '11px', color: '#E65100', fontStyle: 'italic', opacity: 0.85 }}>
                     ↳ {h}
                 </span>
             ))}
@@ -24,8 +19,24 @@ const BulletHints = ({ text }) => {
     );
 };
 
+const SUGGESTED_SKILLS = {
+    technical: ['TypeScript', 'React', 'Node.js', 'PostgreSQL', 'GraphQL'],
+    soft: ['Team Leadership', 'Problem Solving'],
+    tools: ['Git', 'Docker', 'AWS']
+};
+
+const SKILL_CATEGORIES = [
+    { key: 'technical', label: 'Technical Skills' },
+    { key: 'soft', label: 'Soft Skills' },
+    { key: 'tools', label: 'Tools & Technologies' }
+];
+
 const BuilderForm = () => {
-    const { resumeData, updatePersonal, updateSection, addItem, removeItem, loadSampleData } = useResume();
+    const {
+        resumeData, updatePersonal, updateSection,
+        addItem, removeItem, updateItem,
+        addSkill, removeSkill, loadSampleData
+    } = useResume();
 
     const handlePersonalChange = (e) => {
         updatePersonal(e.target.name, e.target.value);
@@ -35,31 +46,55 @@ const BuilderForm = () => {
         updateSection('summary', e.target.value);
     };
 
-    const handleSkillsChange = (e) => {
-        updateSection('skills', e.target.value);
-    };
-
+    // Education
     const [newEducation, setNewEducation] = useState({ institution: '', degree: '', year: '' });
-    const [newExperience, setNewExperience] = useState({ role: '', company: '', duration: '', description: '' });
-    const [newProject, setNewProject] = useState({ name: '', description: '', link: '' });
-
     const handleAddEducation = () => {
         if (!newEducation.institution && !newEducation.degree) return;
         addItem('education', newEducation);
         setNewEducation({ institution: '', degree: '', year: '' });
     };
 
+    // Experience
+    const [newExperience, setNewExperience] = useState({ role: '', company: '', duration: '', description: '' });
     const handleAddExperience = () => {
         if (!newExperience.role && !newExperience.company) return;
         addItem('experience', newExperience);
         setNewExperience({ role: '', company: '', duration: '', description: '' });
     };
 
-    const handleAddProject = () => {
-        if (!newProject.name) return;
-        addItem('projects', newProject);
-        setNewProject({ name: '', description: '', link: '' });
+    // Projects state
+    const [expandedProjects, setExpandedProjects] = useState({});
+    const toggleProject = (id) => {
+        setExpandedProjects(prev => ({ ...prev, [id]: !prev[id] }));
     };
+
+    const handleAddProject = () => {
+        const newProj = {
+            name: '',
+            description: '',
+            techStack: [],
+            liveUrl: '',
+            githubUrl: ''
+        };
+        addItem('projects', newProj);
+    };
+
+    // Skills suggestion
+    const [suggestLoading, setSuggestLoading] = useState(false);
+    const handleSuggestSkills = () => {
+        setSuggestLoading(true);
+        setTimeout(() => {
+            Object.entries(SUGGESTED_SKILLS).forEach(([category, skillsList]) => {
+                skillsList.forEach(skill => addSkill(category, skill));
+            });
+            setSuggestLoading(false);
+        }, 1000);
+    };
+
+    // Helper: total skill count
+    const totalSkills = (resumeData.skills.technical?.length || 0)
+        + (resumeData.skills.soft?.length || 0)
+        + (resumeData.skills.tools?.length || 0);
 
     return (
         <div className="builder-form" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
@@ -144,42 +179,157 @@ const BuilderForm = () => {
                 </button>
             </section>
 
-            {/* Projects */}
+            {/* ===== PROJECTS SECTION (Accordion) ===== */}
             <section>
                 <h3 style={{ marginBottom: '16px' }}>Projects</h3>
-                {resumeData.projects.map(proj => (
-                    <div key={proj.id} style={{ padding: '12px', border: '1px solid #eee', marginBottom: '8px', borderRadius: '4px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <strong>{proj.name}</strong>
-                            <button onClick={() => removeItem('projects', proj.id)} style={{ color: '#8B0000', background: 'none' }}><Trash2 size={16} /></button>
+
+                {resumeData.projects.map(proj => {
+                    const isOpen = expandedProjects[proj.id] !== false; // open by default
+                    return (
+                        <div key={proj.id} style={{
+                            border: '1px solid #eee',
+                            borderRadius: '4px',
+                            marginBottom: '8px',
+                            overflow: 'hidden'
+                        }}>
+                            {/* Accordion header */}
+                            <div
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    padding: '10px 12px',
+                                    backgroundColor: '#fafafa',
+                                    cursor: 'pointer',
+                                    userSelect: 'none'
+                                }}
+                                onClick={() => toggleProject(proj.id)}
+                            >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                                    <strong style={{ fontSize: '14px' }}>{proj.name || 'Untitled Project'}</strong>
+                                </div>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); removeItem('projects', proj.id); }}
+                                    style={{ color: '#8B0000', background: 'none' }}
+                                >
+                                    <Trash2 size={16} />
+                                </button>
+                            </div>
+
+                            {/* Accordion body */}
+                            {isOpen && (
+                                <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    <input
+                                        placeholder="Project Title"
+                                        value={proj.name}
+                                        onChange={e => updateItem('projects', proj.id, { name: e.target.value })}
+                                    />
+                                    <div>
+                                        <textarea
+                                            placeholder="Description (max 200 chars)"
+                                            value={proj.description}
+                                            onChange={e => {
+                                                if (e.target.value.length <= 200) {
+                                                    updateItem('projects', proj.id, { description: e.target.value });
+                                                }
+                                            }}
+                                            style={{ height: '60px' }}
+                                        />
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2px' }}>
+                                            <BulletHints text={proj.description} />
+                                            <span style={{ fontSize: '11px', color: proj.description.length > 180 ? '#E65100' : '#999' }}>
+                                                {proj.description.length}/200
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label style={{ fontSize: '12px', fontWeight: '500', color: '#666', display: 'block', marginBottom: '4px' }}>
+                                            Tech Stack
+                                        </label>
+                                        <TagInput
+                                            tags={proj.techStack || []}
+                                            onAdd={(tag) => updateItem('projects', proj.id, { techStack: [...(proj.techStack || []), tag] })}
+                                            onRemove={(tag) => updateItem('projects', proj.id, { techStack: (proj.techStack || []).filter(t => t !== tag) })}
+                                            placeholder="Add technology..."
+                                        />
+                                    </div>
+
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                        <div>
+                                            <label style={{ fontSize: '12px', fontWeight: '500', color: '#666', display: 'block', marginBottom: '4px' }}>Live URL (optional)</label>
+                                            <input
+                                                placeholder="https://..."
+                                                value={proj.liveUrl || ''}
+                                                onChange={e => updateItem('projects', proj.id, { liveUrl: e.target.value })}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label style={{ fontSize: '12px', fontWeight: '500', color: '#666', display: 'block', marginBottom: '4px' }}>GitHub URL (optional)</label>
+                                            <input
+                                                placeholder="github.com/..."
+                                                value={proj.githubUrl || ''}
+                                                onChange={e => updateItem('projects', proj.id, { githubUrl: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
-                        <p style={{ fontSize: '14px' }}>{proj.description}</p>
-                        <BulletHints text={proj.description} />
-                        {proj.link && <a href={`https://${proj.link}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', color: 'var(--color-accent)' }}>{proj.link}</a>}
-                    </div>
-                ))}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
-                    <input placeholder="Project Name" value={newProject.name} onChange={e => setNewProject({ ...newProject, name: e.target.value })} />
-                    <textarea placeholder="Description (start with an action verb)" value={newProject.description} onChange={e => setNewProject({ ...newProject, description: e.target.value })} style={{ height: '60px' }} />
-                    <BulletHints text={newProject.description} />
-                    <input placeholder="Link" value={newProject.link} onChange={e => setNewProject({ ...newProject, link: e.target.value })} />
-                </div>
+                    );
+                })}
+
                 <button className="btn-secondary" style={{ marginTop: '8px', width: '100%' }} onClick={handleAddProject}>
                     <Plus size={16} style={{ marginRight: '4px' }} /> Add Project
                 </button>
             </section>
 
-            {/* Skills */}
+            {/* ===== SKILLS SECTION (Categorized Tags) ===== */}
             <section>
-                <h3 style={{ marginBottom: '16px' }}>Skills</h3>
-                <textarea
-                    placeholder="Java, Python, React, Playing Chess..."
-                    value={resumeData.skills}
-                    onChange={handleSkillsChange}
-                    style={{ height: '60px' }}
-                />
-                <div style={{ fontSize: '11px', color: '#999', marginTop: '4px' }}>
-                    {resumeData.skills ? resumeData.skills.split(',').map(s => s.trim()).filter(s => s).length : 0} skills (comma separated)
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                    <h3 style={{ marginBottom: '0' }}>Skills</h3>
+                    <button
+                        className="btn-secondary"
+                        onClick={handleSuggestSkills}
+                        disabled={suggestLoading}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '6px',
+                            fontSize: '12px', padding: '6px 12px',
+                            opacity: suggestLoading ? 0.6 : 1
+                        }}
+                    >
+                        <Sparkles size={14} />
+                        {suggestLoading ? 'Adding…' : '✨ Suggest Skills'}
+                    </button>
+                </div>
+
+                {SKILL_CATEGORIES.map(cat => {
+                    const list = resumeData.skills[cat.key] || [];
+                    return (
+                        <div key={cat.key} style={{ marginBottom: '16px' }}>
+                            <label style={{
+                                fontSize: '12px',
+                                fontWeight: '600',
+                                color: '#666',
+                                display: 'block',
+                                marginBottom: '6px',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px'
+                            }}>
+                                {cat.label} ({list.length})
+                            </label>
+                            <TagInput
+                                tags={list}
+                                onAdd={(skill) => addSkill(cat.key, skill)}
+                                onRemove={(skill) => removeSkill(cat.key, skill)}
+                                placeholder={`Add ${cat.label.toLowerCase()}...`}
+                            />
+                        </div>
+                    );
+                })}
+                <div style={{ fontSize: '11px', color: '#999' }}>
+                    {totalSkills} total skills
                 </div>
             </section>
 

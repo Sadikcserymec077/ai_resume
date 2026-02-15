@@ -5,6 +5,12 @@ const ResumeContext = createContext();
 const STORAGE_KEY = 'resumeBuilderData';
 const TEMPLATE_KEY = 'resumeBuilderTemplate';
 
+const INITIAL_SKILLS = {
+    technical: [],
+    soft: [],
+    tools: []
+};
+
 const INITIAL_STATE = {
     personal: {
         fullName: '',
@@ -19,7 +25,7 @@ const INITIAL_STATE = {
     education: [],
     experience: [],
     projects: [],
-    skills: ''
+    skills: INITIAL_SKILLS
 };
 
 const SAMPLE_DATA = {
@@ -61,11 +67,48 @@ const SAMPLE_DATA = {
         {
             id: 1,
             name: 'E-Commerce Platform',
-            description: 'A full-featured shopping platform built with React and Node.js.',
-            link: 'github.com/alex/shop'
+            description: 'A full-featured shopping platform built with React and Node.js serving 10k users.',
+            techStack: ['React', 'Node.js', 'MongoDB'],
+            liveUrl: 'ecommerce-demo.vercel.app',
+            githubUrl: 'github.com/alex/shop'
         }
     ],
-    skills: 'JavaScript, React, Node.js, Python, AWS, Docker, TypeScript, GraphQL'
+    skills: {
+        technical: ['JavaScript', 'React', 'Node.js', 'Python', 'TypeScript', 'GraphQL'],
+        soft: ['Team Leadership', 'Problem Solving', 'Communication'],
+        tools: ['Git', 'Docker', 'AWS', 'PostgreSQL']
+    }
+};
+
+/**
+ * Migrate old skills format (string) to new format (object with categories).
+ * Migrate old project format (link) to new format (liveUrl, githubUrl, techStack).
+ */
+const migrateData = (data) => {
+    // Migrate skills
+    let skills = data.skills;
+    if (typeof skills === 'string') {
+        const list = skills.split(',').map(s => s.trim()).filter(s => s);
+        skills = { technical: list, soft: [], tools: [] };
+    } else if (!skills || typeof skills !== 'object') {
+        skills = { ...INITIAL_SKILLS };
+    } else {
+        skills = {
+            technical: skills.technical || [],
+            soft: skills.soft || [],
+            tools: skills.tools || []
+        };
+    }
+
+    // Migrate projects
+    const projects = (data.projects || []).map(p => ({
+        ...p,
+        techStack: p.techStack || [],
+        liveUrl: p.liveUrl || p.link || '',
+        githubUrl: p.githubUrl || ''
+    }));
+
+    return { ...data, skills, projects };
 };
 
 // Load from localStorage on init
@@ -74,7 +117,7 @@ const loadFromStorage = () => {
         const stored = localStorage.getItem(STORAGE_KEY);
         if (stored) {
             const parsed = JSON.parse(stored);
-            return {
+            const base = {
                 personal: { ...INITIAL_STATE.personal, ...parsed.personal },
                 summary: parsed.summary || '',
                 education: parsed.education || [],
@@ -82,6 +125,7 @@ const loadFromStorage = () => {
                 projects: parsed.projects || [],
                 skills: parsed.skills || ''
             };
+            return migrateData(base);
         }
     } catch (e) {
         console.warn('Failed to load resume data from localStorage:', e);
@@ -95,9 +139,7 @@ const loadTemplate = () => {
         if (stored && ['classic', 'modern', 'minimal'].includes(stored)) {
             return stored;
         }
-    } catch (e) {
-        // ignore
-    }
+    } catch (e) { /* ignore */ }
     return 'classic';
 };
 
@@ -116,11 +158,7 @@ export const ResumeProvider = ({ children }) => {
 
     // Auto-save template choice
     useEffect(() => {
-        try {
-            localStorage.setItem(TEMPLATE_KEY, template);
-        } catch (e) {
-            // ignore
-        }
+        try { localStorage.setItem(TEMPLATE_KEY, template); } catch (e) { /* ignore */ }
     }, [template]);
 
     const updatePersonal = (field, value) => {
@@ -151,6 +189,37 @@ export const ResumeProvider = ({ children }) => {
         }));
     };
 
+    const updateItem = (section, id, updates) => {
+        setResumeData(prev => ({
+            ...prev,
+            [section]: prev[section].map(item =>
+                item.id === id ? { ...item, ...updates } : item
+            )
+        }));
+    };
+
+    // Skills helpers
+    const addSkill = (category, skill) => {
+        setResumeData(prev => {
+            const existing = prev.skills[category] || [];
+            if (existing.includes(skill)) return prev;
+            return {
+                ...prev,
+                skills: { ...prev.skills, [category]: [...existing, skill] }
+            };
+        });
+    };
+
+    const removeSkill = (category, skill) => {
+        setResumeData(prev => ({
+            ...prev,
+            skills: {
+                ...prev.skills,
+                [category]: (prev.skills[category] || []).filter(s => s !== skill)
+            }
+        }));
+    };
+
     const loadSampleData = () => {
         setResumeData(SAMPLE_DATA);
     };
@@ -162,6 +231,9 @@ export const ResumeProvider = ({ children }) => {
             updateSection,
             addItem,
             removeItem,
+            updateItem,
+            addSkill,
+            removeSkill,
             loadSampleData,
             template,
             setTemplate

@@ -12,7 +12,11 @@ const computeImprovements = (resumeData) => {
     const { summary, education, experience, projects, skills } = resumeData;
 
     const wordCount = summary ? summary.trim().split(/\s+/).length : 0;
-    const skillsList = skills ? skills.split(',').map(s => s.trim()).filter(s => s) : [];
+    const skillCount = (() => {
+        if (typeof skills === 'string') return skills.split(',').map(s => s.trim()).filter(s => s).length;
+        if (skills && typeof skills === 'object') return (skills.technical?.length || 0) + (skills.soft?.length || 0) + (skills.tools?.length || 0);
+        return 0;
+    })();
     const allBullets = [
         ...experience.map(e => e.description || ''),
         ...projects.map(p => p.description || '')
@@ -32,8 +36,8 @@ const computeImprovements = (resumeData) => {
     if (wordCount < 40) {
         improvements.push('Expand your summary to 40–120 words for better ATS matching.');
     }
-    if (skillsList.length < 8) {
-        improvements.push(`List more skills (you have ${skillsList.length}, target 8+).`);
+    if (skillCount < 8) {
+        improvements.push(`List more skills (you have ${skillCount}, target 8+).`);
     }
 
     return improvements.slice(0, 3);

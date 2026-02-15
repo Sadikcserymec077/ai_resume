@@ -1,6 +1,7 @@
 /**
  * ATS Scoring Engine v1 — Deterministic
  * Returns { score, suggestions }
+ * Supports new skills format: { technical: [], soft: [], tools: [] }
  */
 
 const countWords = (text) => {
@@ -9,8 +10,20 @@ const countWords = (text) => {
 };
 
 const hasNumbers = (text) => {
-    // Matches %, digits, "X", "k", "$" patterns commonly used for impact
     return /\d+%|\d+x|\d+k|\$\d+|\d{2,}/.test(text);
+};
+
+/** Total skill count across all categories */
+const getTotalSkills = (skills) => {
+    if (typeof skills === 'string') {
+        return skills.split(',').map(s => s.trim()).filter(s => s).length;
+    }
+    if (skills && typeof skills === 'object') {
+        return (skills.technical?.length || 0)
+            + (skills.soft?.length || 0)
+            + (skills.tools?.length || 0);
+    }
+    return 0;
 };
 
 export const computeATSScore = (resumeData) => {
@@ -45,13 +58,11 @@ export const computeATSScore = (resumeData) => {
     }
 
     // 4. Skills: +10 if ≥ 8 items
-    const skillsList = skills
-        ? skills.split(',').map(s => s.trim()).filter(s => s)
-        : [];
-    if (skillsList.length >= 8) {
+    const skillCount = getTotalSkills(skills);
+    if (skillCount >= 8) {
         score += 10;
     } else {
-        suggestions.push(`Add more skills (target 8+, you have ${skillsList.length}).`);
+        suggestions.push(`Add more skills (target 8+, you have ${skillCount}).`);
     }
 
     // 5. Links: +10 if GitHub or LinkedIn exists
@@ -83,13 +94,11 @@ export const computeATSScore = (resumeData) => {
         suggestions.push('Complete your education section (institution, degree, year).');
     }
 
-    // Cap at 100
     const finalScore = Math.min(score, 100);
 
-    // Limit suggestions to 3
     return {
         score: finalScore,
-        maxScore: 80, // 15+10+10+10+10+15+10 = 80 total possible
+        maxScore: 80,
         suggestions: suggestions.slice(0, 3)
     };
 };
