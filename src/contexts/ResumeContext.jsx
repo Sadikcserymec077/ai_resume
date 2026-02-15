@@ -4,6 +4,15 @@ const ResumeContext = createContext();
 
 const STORAGE_KEY = 'resumeBuilderData';
 const TEMPLATE_KEY = 'resumeBuilderTemplate';
+const COLOR_KEY = 'resumeBuilderAccentColor';
+
+const ACCENT_COLORS = [
+    'hsl(168, 60%, 40%)',
+    'hsl(220, 60%, 35%)',
+    'hsl(345, 60%, 35%)',
+    'hsl(150, 50%, 30%)',
+    'hsl(0, 0%, 25%)'
+];
 
 const INITIAL_SKILLS = {
     technical: [],
@@ -143,9 +152,18 @@ const loadTemplate = () => {
     return 'classic';
 };
 
+const loadColor = () => {
+    try {
+        const stored = localStorage.getItem(COLOR_KEY);
+        if (stored && ACCENT_COLORS.includes(stored)) return stored;
+    } catch (e) { /* ignore */ }
+    return ACCENT_COLORS[0];
+};
+
 export const ResumeProvider = ({ children }) => {
     const [resumeData, setResumeData] = useState(loadFromStorage);
     const [template, setTemplate] = useState(loadTemplate);
+    const [accentColor, setAccentColor] = useState(loadColor);
 
     // Auto-save resume data
     useEffect(() => {
@@ -160,6 +178,11 @@ export const ResumeProvider = ({ children }) => {
     useEffect(() => {
         try { localStorage.setItem(TEMPLATE_KEY, template); } catch (e) { /* ignore */ }
     }, [template]);
+
+    // Auto-save accent color
+    useEffect(() => {
+        try { localStorage.setItem(COLOR_KEY, accentColor); } catch (e) { /* ignore */ }
+    }, [accentColor]);
 
     const updatePersonal = (field, value) => {
         setResumeData(prev => ({
@@ -236,7 +259,9 @@ export const ResumeProvider = ({ children }) => {
             removeSkill,
             loadSampleData,
             template,
-            setTemplate
+            setTemplate,
+            accentColor,
+            setAccentColor
         }}>
             {children}
         </ResumeContext.Provider>
